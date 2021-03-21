@@ -1,4 +1,5 @@
 <template>
+  <td>{{item.market_cap_rank}}</td>
   <td>
     <img width="30" :src="item.image" :alt="item.name" />
     <router-link :to="createUrl(item.id)">{{item.name}} {{item.symbol}}</router-link>
