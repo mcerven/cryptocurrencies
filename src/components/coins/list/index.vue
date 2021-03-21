@@ -22,6 +22,7 @@
 <script>
 import { computed, onMounted, ref } from 'vue';
 import ListItem from './ListItem.vue';
+
 export default {
   name: 'List',
   components: {
