@@ -17,35 +17,12 @@
         </tr>
       </tbody>
     </table>
-    <div class="pagination">
-      <a v-if="page > minPage" :href="`/?page=${page - 1}`">&#60;</a>
-      <a v-if="page > minPage" :href="`/?page=${minPage}`">&nbsp;{{minPage}}&nbsp;</a>
-      <div v-if="page - nextLinksCount - 1 > minPage" class="currentPageLink" style="display: inline-block;">
-        ...
-      </div>
-      <a
-        v-for="previousPageLink in previousPageLinks"
-        :key="previousPageLink"
-        :href="`/?page=${previousPageLink}`"
-      >
-        &nbsp;{{previousPageLink}}&nbsp;
-      </a>
-      <div class="currentPageLink" style="display: inline-block;">
-        &nbsp;{{page}}&nbsp;
-      </div>
-      <a
-        v-for="nextPageLink in nextPageLinks"
-        :key="nextPageLink"
-        :href="`/?page=${nextPageLink}`"
-      >
-        &nbsp;{{nextPageLink}}&nbsp;
-      </a>
-      <div v-if="page + nextLinksCount + 1 < maxPage" class="currentPageLink" style="display: inline-block;">
-        ...
-      </div>
-      <a v-if="page < maxPage" :href="`/?page=${maxPage}`">&nbsp;{{maxPage}}&nbsp;</a>
-      <a v-if="page < maxPage" :href="`/?page=${page + 1}`">&#62;</a>
-    </div>
+    <Pagination
+      url="\?page="
+      :page="page"
+      :minPage="minPage"
+      :maxPage="maxPage"
+    />
   </div>
 </template>
 
@@ -53,43 +30,22 @@
 import { computed, ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ListItem from './ListItem.vue';
+import Pagination from './Pagination.vue';
 
 export default {
   name: 'List',
   components: {
-    ListItem
+    ListItem,
+    Pagination,
   },
   setup() {
     const listLength = 1000;
     const perPage = 20;
     const minPage = 1;
     const maxPage = Math.ceil(listLength / perPage);
-    const nextLinksCount = 2;
 
     const list = ref([]);
     const page = ref(minPage);
-
-    const previousPageLinks = computed(() => {
-      const result = [];
-
-      for (let i = -nextLinksCount; i <= -1; i++) {
-        const value = page.value + i;
-        if (value > minPage)
-          result.push(value);
-      }
-      return result;
-    });
-
-    const nextPageLinks = computed(() => {
-      const result = [];
-
-      for (let i = 1; i <= nextLinksCount; i++) {
-        const value = page.value + i;
-        if (value < maxPage)
-          result.push(value);
-      }
-      return result;
-    });
 
     const currencyCode = ref('usd');
     const currencyHumanized = computed(() => currencyCode.value.toUpperCase());
@@ -117,9 +73,6 @@ export default {
       list,
       currencyCode,
       currencyHumanized,
-      previousPageLinks,
-      nextPageLinks,
-      nextLinksCount,
     };
   }
 }
