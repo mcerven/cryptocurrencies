@@ -1,5 +1,5 @@
 <template>
-  <select name="targetCurrency" v-model="targetCurrency">
+  <select v-model="targetCurrency" name="targetCurrency">
     <option v-for="currency in targetCurrencies"
       :key="currency"
       :value="currency"
@@ -26,7 +26,7 @@
       </tbody>
     </table>
     <Pagination
-      url="\?page="
+      :url="paginationUrl"
       :page="page"
       :minPage="minPage"
       :maxPage="maxPage"
@@ -35,8 +35,8 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import ListItem from './ListItem.vue';
 import Pagination from './Pagination.vue';
 
@@ -55,12 +55,16 @@ export default {
 
     const page = ref(minPage);
     const list = ref([]);
-    const targetCurrency = ref('usd');
+    const targetCurrency = ref(targetCurrencies[0]);
 
     const humanize = (value) => value.toUpperCase();
+    const paginationUrl = computed(() => `/?targetCurrency=${targetCurrency.value}&page=`);
+
+    const route = useRoute();
+    const router = useRouter();
 
     onMounted(async () => {
-      const { page: pageQueryParam, currency: currencyQueryParam } = useRoute().query;
+      const { page: pageQueryParam, targetCurrency: currencyQueryParam } = route.query;
       
       if (pageQueryParam && !isNaN(pageQueryParam)) {
         page.value = Number(pageQueryParam);
@@ -75,6 +79,13 @@ export default {
     });
     
     watch([targetCurrency, page], async () => {
+      router.replace({ name: 'List',
+        query: {
+          targetCurrency: targetCurrency.value,
+          page: page.value,
+        }
+      });
+
       list.value = await fetchCurrencies(targetCurrency.value, perPage, page.value);
     });
     
@@ -86,6 +97,7 @@ export default {
       targetCurrencies,
       targetCurrency,
       humanize,
+      paginationUrl,
     };
   }
 }
@@ -94,13 +106,10 @@ async function fetchCurrencies(targetCurrency, perPage, page = 1) {
   const url=`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${targetCurrency}&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=false`;
 
   try {
-    const res=await fetch(url);
+    const res = await fetch(url);
     return await res.json();
   } catch(err) {
     console.error(err);
   }
 }
 </script>
-
-<style scoped>
-</style>
