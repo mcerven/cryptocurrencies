@@ -1,11 +1,19 @@
 <template>
+  <select name="targetCurrency" v-model="targetCurrency">
+    <option v-for="currency in targetCurrencies"
+      :key="currency"
+      :value="currency"
+    >
+      {{ humanize(currency) }}
+    </option>
+  </select>
   <div class="List">
     <table>
       <thead>
         <tr>
           <td>#</td>
           <td>Asset</td>
-          <td>Price ({{currencyHumanized}})</td>
+          <td>Price ({{humanize(targetCurrency)}})</td>
           <td>Market Cap</td>
           <td>Circulating Supply</td>
           <td>Total Supply</td>
@@ -27,7 +35,7 @@
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import ListItem from './ListItem.vue';
 import Pagination from './Pagination.vue';
@@ -43,27 +51,31 @@ export default {
     const perPage = 20;
     const minPage = 1;
     const maxPage = Math.ceil(listLength / perPage);
+    const targetCurrencies = ['usd', 'eur', 'cny', 'czk', 'gbp', 'jpy', 'krw', 'rub'];
 
-    const list = ref([]);
     const page = ref(minPage);
+    const list = ref([]);
+    const targetCurrency = ref('usd');
 
-    const currencyCode = ref('usd');
-    const currencyHumanized = computed(() => currencyCode.value.toUpperCase());
+    const humanize = (value) => value.toUpperCase();
 
     onMounted(async () => {
-      const { page: pageQueryParam } = useRoute().query;
+      const { page: pageQueryParam, currency: currencyQueryParam } = useRoute().query;
+      
       if (pageQueryParam && !isNaN(pageQueryParam)) {
         page.value = Number(pageQueryParam);
       }
-      
-      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currencyCode.value}&order=market_cap_desc&per_page=${perPage}&page=${page.value}&sparkline=false`;
 
-      try {
-        const res = await fetch(url);
-        list.value = await res.json();
-      } catch (err) {
-        console.error(err);
+      const normalizedCurrencyQueryParam = currencyQueryParam?.toLowerCase();
+      if (normalizedCurrencyQueryParam && targetCurrencies.includes(normalizedCurrencyQueryParam)) {
+        targetCurrency.value = normalizedCurrencyQueryParam;
       }
+
+      list.value = await fetchCurrencies(targetCurrency.value, perPage, page.value);
+    });
+    
+    watch([targetCurrency, page], async () => {
+      list.value = await fetchCurrencies(targetCurrency.value, perPage, page.value);
     });
     
     return {
@@ -71,9 +83,21 @@ export default {
       minPage,
       maxPage,
       list,
-      currencyCode,
-      currencyHumanized,
+      targetCurrencies,
+      targetCurrency,
+      humanize,
     };
+  }
+}
+
+async function fetchCurrencies(targetCurrency, perPage, page = 1) {
+  const url=`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${targetCurrency}&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=false`;
+
+  try {
+    const res=await fetch(url);
+    return await res.json();
+  } catch(err) {
+    console.error(err);
   }
 }
 </script>
